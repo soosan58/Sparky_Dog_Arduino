@@ -1,0 +1,171 @@
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Servo.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define TRIG_PIN 12   // Ultrasonic sensor TRIG pin
+#define ECHO_PIN 11   // Ultrasonic sensor ECHO pin
+
+#define enA 10  // Motor1 L298 Pin enA 
+#define in1 9   // Motor1 L298 Pin in1 
+#define in2 8   // Motor1 L298 Pin in2 
+#define in3 7   // Motor2 L298 Pin in3 
+#define in4 6   // Motor2 L298 Pin in4 
+#define enB 5   // Motor2 L298 Pin enB 
+
+#define BUTTON_PIN 2  // Button connected to pin 2
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+Servo tailServo;
+
+long distanceThreshold = 10;  // Distance threshold for movement (in cm)
+bool isMoving = false; // Flag to track movement state
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  
+  pinMode(enA, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+  pinMode(enB, OUTPUT);
+  
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // Button input with internal pull-up
+
+  analogWrite(enA, 255);
+  analogWrite(enB, 255);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    while (true);
+  }
+  display.clearDisplay();
+
+  tailServo.attach(A0);
+  tailServo.write(90);
+}
+
+void loop() {
+  checkButtonPress(); // Check if button is pressed
+
+  long duration;
+  int distance;
+
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration * 0.034 / 2;
+
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  if (distance < distanceThreshold) {
+    if (!isMoving) {
+      forward();
+      displayEyesOpen();
+      isMoving = true;
+    }
+    wagTail();  // Wag tail while moving
+  } 
+  else {
+    if (isMoving) {
+      stop();
+      displayEyesClosed();
+      tailServo.write(90);  // Reset tail to neutral
+      isMoving = false;
+    }
+  }
+
+  delay(100);
+}
+
+// Function to check button press and display "exp check"
+void checkButtonPress() {
+  if (digitalRead(BUTTON_PIN) == LOW) { // Button pressed (active LOW)
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(10, 30);
+    display.print("exp check");
+    display.display();
+    Serial.println("Button Pressed: exp check");
+
+    delay(300); // Debounce delay
+  }
+}
+
+void forward() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
+  Serial.println("Moving Forward");
+}
+
+void stop() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+  Serial.println("Stopped");
+}
+
+void wagTail() {
+  static bool wagLeft = false; // Track wagging direction
+
+  if (wagLeft) {
+    tailServo.write(120); // Move tail to one side
+  } else {
+    tailServo.write(60);  // Move tail to the other side
+  }
+  wagLeft = !wagLeft; // Toggle direction
+  delay(150);  // Control wagging speed
+}
+
+void displayEyesOpen() {
+  display.clearDisplay();
+  display.drawCircle(61, 32, 0, SSD1306_WHITE);
+  display.drawCircle(61, 32, 9, SSD1306_WHITE);
+  display.drawCircle(61, 32, 17, SSD1306_WHITE);
+  display.display();
+}
+
+void displayEyesClosed() {
+  display.clearDisplay();
+  display.drawLine(32, 34, 32, 34, SSD1306_WHITE);
+  display.drawLine(31, 34, 93, 2, SSD1306_WHITE);
+  display.drawLine(93, 2, 97, 13, SSD1306_WHITE);
+  display.drawLine(97, 14, 46, 37, SSD1306_WHITE);
+  display.drawLine(46, 37, 99, 49, SSD1306_WHITE);
+  display.drawLine(99, 49, 93, 59, SSD1306_WHITE);
+  display.drawLine(93, 59, 31, 34, SSD1306_WHITE);
+  display.display();
+}
+
+void setup() {
+  Serial.begin(9600); // Start serial communication
+  pinMode(A1, INPUT); // Set IR sensor 1 as input
+  pinMode(A2, INPUT); // Set IR sensor 2 as input
+}
+
+void loop() {
+  int sensor1 = analogRead(A1); // Read IR sensor 1
+  int sensor2 = analogRead(A2); // Read IR sensor 2
+
+  // Print the sensor values to Serial Monitor
+  Serial.print("Sensor 1: ");
+  Serial.print(sensor1);
+  Serial.print("  |  Sensor 2: ");
+  Serial.println(sensor2);
+
+  delay(200); // Delay to make output readable
+}
