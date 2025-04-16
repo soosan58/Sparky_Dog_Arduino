@@ -13,7 +13,40 @@ for(;;);
 }
 display.clearDisplay();
 
-// Draw shapes
+//////////blinking function with normal eyes
+// Level 1 Eye Display Functions
+void displayLevel1EyesOpen() {
+  display.clearDisplay();
+  display.fillRect(49, 3, 27, 58, SSD1306_WHITE);  // Single rectangular "eye" in the center
+  display.display();
+}
+
+void displayLevel1EyesClosed() {
+  display.clearDisplay();
+  // Two horizontal rectangles representing closed eyes
+  display.fillRect(25, 30, 40, 10, SSD1306_WHITE);  // Left closed eye
+  display.fillRect(65, 30, 40, 10, SSD1306_WHITE);  // Right closed eye
+  display.display();
+}
+
+// Blinking Animation Usage Example
+void blinkAnimation() {
+  displayEyesClosed();
+  delay(150);  // Brief closed-eye duration
+  displayEyesOpen();
+}
+
+// Helper function that calls the appropriate level's eyes
+void displayEyesOpen() {
+  displayLevel1EyesOpen();
+}
+
+void displayEyesClosed() {
+  displayLevel1EyesClosed();
+}
+
+
+// Draw shapes (normal eyes)
 
   //id: 0 fillRect 31 
   display.fillRect(49, 3, 27, 58, SSD1306_WHITE);
@@ -24,3 +57,39 @@ display.display();
 void loop() {
 // Empty loop
 }
+
+//heart eyes
+// Draw shapes
+
+  //id: 0 fillRect 0 
+  display.fillRect(59, 12, 9, 6, SSD1306_WHITE);
+  //id: 1 fillRect 1 
+  display.fillRect(68, 7, 7, 5, SSD1306_WHITE);
+  //id: 2 fillRect 3 
+  display.fillRect(50, 6, 8, 6, SSD1306_WHITE);
+  //id: 3 fillRect 4 
+  display.fillRect(74, 1, 23, 6, SSD1306_WHITE);
+  //id: 4 fillRect 5 
+  display.fillRect(29, 1, 21, 5, SSD1306_WHITE);
+  //id: 5 fillRect 6 
+  display.fillRect(21, 6, 8, 7, SSD1306_WHITE);
+  //id: 6 fillRect 7 
+  display.fillRect(17, 14, 8, 23, SSD1306_WHITE);
+  //id: 7 fillRect 8 
+  display.fillRect(27, 37, 10, 10, SSD1306_WHITE);
+  //id: 8 fillRect 9 
+  display.fillRect(38, 47, 10, 10, SSD1306_WHITE);
+  //id: 9 fillRect 11 
+  display.fillRect(48, 57, 12, 6, SSD1306_WHITE);
+  //id: 10 fillRect 12 
+  display.fillRect(71, 56, 12, 7, SSD1306_WHITE);
+  //id: 11 fillRect 13 
+  display.fillRect(84, 46, 11, 9, SSD1306_WHITE);
+  //id: 12 fillRect 14 
+  display.fillRect(94, 36, 11, 10, SSD1306_WHITE);
+  //id: 13 fillRect 15 
+  display.fillRect(98, 7, 10, 7, SSD1306_WHITE);
+  //id: 14 fillRect 16 
+  display.fillRect(105, 14, 8, 23, SSD1306_WHITE);
+
+//
