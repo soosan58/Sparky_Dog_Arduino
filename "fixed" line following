@@ -1,0 +1,214 @@
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Servo.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define TRIG_PIN 12
+#define ECHO_PIN 11
+
+#define enA 10
+#define in1 9
+#define in2 8
+#define in3 7
+#define in4 6
+#define enB 5
+
+#define BUTTON_PIN 2
+
+#define LEFT_IR A1
+#define RIGHT_IR A3
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+Servo tailServo;
+
+long distanceThreshold = 10;
+bool isMoving = false;
+unsigned long lastBlinkTime = 0;
+bool blinkState = false;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  pinMode(enA, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+  pinMode(enB, OUTPUT);
+
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  analogWrite(enA, 255);
+  analogWrite(enB, 255);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    while (true);
+  }
+  display.clearDisplay();
+
+  tailServo.attach(A0);
+  tailServo.write(90);
+}
+
+void loop() {
+  checkButtonPress();
+
+  long distance = readDistance();
+
+  if (distance < distanceThreshold) {
+    followLine();
+    displayEyesOpen();
+    wagTail();
+    isMoving = true;
+  } else {
+    if (isMoving) {
+      stop();
+      tailServo.write(90);
+      isMoving = false;
+    }
+    blinkIdleEyes();
+  }
+
+  delay(50);
+}
+
+void checkButtonPress() {
+  if (digitalRead(BUTTON_PIN) == LOW) {
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(10, 30);
+    display.print("exp check");
+    display.display();
+    Serial.println("Button Pressed: exp check");
+
+    delay(300);
+  }
+}
+
+long readDistance() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  long duration = pulseIn(ECHO_PIN, HIGH);
+  long distance = duration * 0.034 / 2;
+
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  return distance;
+}
+
+void followLine() {
+  int leftIR = analogRead(LEFT_IR);
+  int rightIR = analogRead(RIGHT_IR);
+
+  Serial.print("L: ");
+  Serial.print(leftIR);
+  Serial.print(" R: ");
+  Serial.println(rightIR);
+
+  int threshold = 500;
+
+  if (leftIR < threshold && rightIR < threshold) {
+    forward();
+  } else if (leftIR < threshold && rightIR >= threshold) {
+    turnLeft();
+  } else if (leftIR >= threshold && rightIR < threshold) {
+    turnRight();
+  } else {
+    stop();
+  }
+}
+
+void forward() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
+  Serial.println("Moving Forward");
+}
+
+void turnLeft() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+  Serial.println("Turning Left");
+}
+
+void turnRight() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
+  Serial.println("Turning Right");
+}
+
+void stop() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+  Serial.println("Stopped");
+}
+
+void wagTail() {
+  static bool wagLeft = false;
+  if (wagLeft) {
+    tailServo.write(120);
+  } else {
+    tailServo.write(60);
+  }
+  wagLeft = !wagLeft;
+  delay(150);
+}
+
+// Idle blink every 3 seconds
+void blinkIdleEyes() {
+  unsigned long currentTime = millis();
+  if (currentTime - lastBlinkTime > 3000) {
+    blinkAnimation();
+    lastBlinkTime = currentTime;
+  } else if (!blinkState) {
+    displayEyesOpen();
+  }
+}
+
+void blinkAnimation() {
+  blinkState = true;
+  displayEyesClosed();
+  delay(150);
+  displayEyesOpen();
+  blinkState = false;
+}
+
+// Eye Display Functions
+void displayLevel1EyesOpen() {
+  display.clearDisplay();
+  display.fillRect(49, 3, 27, 58, SSD1306_WHITE);
+  display.display();
+}
+
+void displayLevel1EyesClosed() {
+  display.clearDisplay();
+  display.fillRect(25, 30, 40, 10, SSD1306_WHITE);
+  display.fillRect(65, 30, 40, 10, SSD1306_WHITE);
+  display.display();
+}
+
+void displayEyesOpen() {
+  displayLevel1EyesOpen();
+}
+
+void displayEyesClosed() {
+  displayLevel1EyesClosed();
+}
